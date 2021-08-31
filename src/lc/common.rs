@@ -10,13 +10,15 @@ pub trait LocationalCodeBase: Copy + std::convert::Into<u64> {
     /// Number of bits used to represent each level of the code (2 for 2D, 3 for 3D).
     const PER_LEVEL_BITS: u32;
     /// Maximum inclusive depth the code can represent for the bits we use at each level.
-    pub const MAX_INCLUSIVE_DEPTH: u32 = (u64::BITS - 1) / Self::PER_LEVEL_BITS - 1;
+    const MAX_INCLUSIVE_DEPTH: u32 = (u64::BITS - 1) / Self::PER_LEVEL_BITS - 1;
     /// Smallest valid code.
     const SMALLEST_CODE: u64 = 1 << Self::PER_LEVEL_BITS;
     /// Largest valid code.
     const LARGEST_CODE: u64 = (1 << (Self::MAX_INCLUSIVE_DEPTH * Self::PER_LEVEL_BITS + 1)) - 1;
 
     /// Create a new LC from the given raw code by trusting it's valid.
+    /// # Safety
+    /// The code is expected to be valid as there is no check on it for this constructor.
     unsafe fn new_from_raw(code: u64) -> Self;
 
     /// Create a new LC from the given code, check that the given value is within the valid range
@@ -65,7 +67,9 @@ pub trait LocationalCodeBase: Copy + std::convert::Into<u64> {
         }
     }
 
-    // Compute the LC of the child code without checking if self can have children.
+    /// Compute the LC of the child code without checking if self can have children.
+    /// # Safety
+    /// The caller must be sure it's possible to compute a child code without loss of bits.
     #[inline]
     unsafe fn child_code_unchecked<T>(self, child: T) -> Self
     where
