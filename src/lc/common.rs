@@ -10,7 +10,7 @@ pub trait LocationalCodeBase: Copy + std::convert::Into<u64> {
     /// Number of bits used to represent each level of the code (2 for 2D, 3 for 3D).
     const PER_LEVEL_BITS: u32;
     /// Maximum inclusive depth the code can represent for the bits we use at each level.
-    const MAX_INCLUSIVE_DEPTH: u32 = (u64::BITS - 1) / Self::PER_LEVEL_BITS - 1;
+    pub const MAX_INCLUSIVE_DEPTH: u32 = (u64::BITS - 1) / Self::PER_LEVEL_BITS - 1;
     /// Smallest valid code.
     const SMALLEST_CODE: u64 = 1 << Self::PER_LEVEL_BITS;
     /// Largest valid code.
