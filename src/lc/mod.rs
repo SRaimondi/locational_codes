@@ -63,7 +63,7 @@ pub const NEIGHBOUR_DIRECTIONS_2D: [NeighbourDirection2D; 4] = [
 ];
 
 /// Struct representing a locational code for the 2D case.
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash)]
 pub struct LocationalCode2D {
     internal: u64,
 }
