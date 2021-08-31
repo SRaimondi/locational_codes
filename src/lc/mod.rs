@@ -1,6 +1,7 @@
-use crate::lc::common::LocationalCodeBase;
-
 pub mod common;
+mod helpers;
+
+use crate::lc::common::LocationalCodeBase;
 
 /// Helper enum representing the possible children in a node of the Quadtree. The value is set
 /// such that the bits are already the morton codes for a 2x2 grid.
@@ -104,7 +105,7 @@ impl LocationalCode2D {
         let depth = self.depth();
         // Compute maximum index along an axis for the depth
         let max_index = Self::max_index_for_depth(depth) - 1;
-        let raw_code_no_sentinel = common::helpers::unset_msb(self.internal);
+        let raw_code_no_sentinel = helpers::unset_msb(self.internal);
         // Decode the code into the 2 coordinates (i, j)
         let coordinates = morton::decode_2d(raw_code_no_sentinel);
         let (new_i, new_j) = match neighbour_direction {
@@ -159,40 +160,26 @@ impl common::LocationalCodeBase for LocationalCode2D {
 mod test {
     use super::*;
 
-    type LC = LocationalCode2D;
-
-    #[test]
-    fn test_msb_index() {
-        for i in 2..61 {
-            assert_eq!(common::helpers::msb_index(1 << i), i);
-        }
-    }
-
-    #[test]
-    fn test_unset_msb() {
-        for i in 2..61 {
-            assert_eq!(common::helpers::unset_msb(1 << i), 0);
-        }
-    }
+    type LC2 = LocationalCode2D;
 
     #[test]
     fn test_root_creation() {
-        assert_eq!(LC::new_root(Child2D::BottomLeft).internal, 0b100);
-        assert_eq!(LC::new_root(Child2D::BottomRight).internal, 0b101);
-        assert_eq!(LC::new_root(Child2D::TopLeft).internal, 0b110);
-        assert_eq!(LC::new_root(Child2D::TopRight).internal, 0b111);
+        assert_eq!(LC2::new_root(Child2D::BottomLeft).internal, 0b100);
+        assert_eq!(LC2::new_root(Child2D::BottomRight).internal, 0b101);
+        assert_eq!(LC2::new_root(Child2D::TopLeft).internal, 0b110);
+        assert_eq!(LC2::new_root(Child2D::TopRight).internal, 0b111);
     }
 
     #[test]
     fn test_node_depth() {
-        for d in 0..LC::MAX_INCLUSIVE_DEPTH {
-            assert_eq!(LC::new_from_code_and_depth(0, d).unwrap().depth(), d);
+        for d in 0..LC2::MAX_INCLUSIVE_DEPTH {
+            assert_eq!(LC2::new_from_code_and_depth(0, d).unwrap().depth(), d);
         }
     }
 
     #[test]
     fn test_parent_code() {
-        let c = LC::new_from_code(0b1_11_00_01);
+        let c = LC2::new_from_code(0b1_11_00_01);
         let p0 = match c.unwrap().parent_code() {
             Some(c) => {
                 assert_eq!(c.internal, 0b1_11_00);
@@ -214,7 +201,7 @@ mod test {
 
     #[test]
     fn test_child_code() {
-        let root = LC::new_root(Child2D::TopLeft);
+        let root = LC2::new_root(Child2D::TopLeft);
         assert_eq!(
             root.child_code(Child2D::BottomLeft).unwrap().internal,
             0b1_10_00
@@ -223,7 +210,10 @@ mod test {
             root.child_code(Child2D::BottomRight).unwrap().internal,
             0b1_10_01
         );
-        assert_eq!(root.child_code(Child2D::TopLeft).unwrap().internal, 0b1_10_10);
+        assert_eq!(
+            root.child_code(Child2D::TopLeft).unwrap().internal,
+            0b1_10_10
+        );
         assert_eq!(
             root.child_code(Child2D::TopRight).unwrap().internal,
             0b1_10_11
@@ -233,110 +223,110 @@ mod test {
     #[test]
     fn test_neighbour_code() {
         // Bottom left root node
-        let node = LC::new_root(Child2D::BottomLeft);
+        let node = LC2::new_root(Child2D::BottomLeft);
         assert_eq!(
             node.same_depth_neighbour(NeighbourDirection2D::North),
-            Some(LC::new_root(Child2D::TopLeft))
+            Some(LC2::new_root(Child2D::TopLeft))
         );
         assert_eq!(
             node.same_depth_neighbour(NeighbourDirection2D::East),
-            Some(LC::new_root(Child2D::BottomRight))
+            Some(LC2::new_root(Child2D::BottomRight))
         );
         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::South), None);
         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::West), None);
 
         // Bottom right root node
-        let node = LC::new_root(Child2D::BottomRight);
+        let node = LC2::new_root(Child2D::BottomRight);
         assert_eq!(
             node.same_depth_neighbour(NeighbourDirection2D::North),
-            Some(LC::new_root(Child2D::TopRight))
+            Some(LC2::new_root(Child2D::TopRight))
         );
         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::East), None);
         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::South), None);
         assert_eq!(
             node.same_depth_neighbour(NeighbourDirection2D::West),
-            Some(LC::new_root(Child2D::BottomLeft))
+            Some(LC2::new_root(Child2D::BottomLeft))
         );
 
         // Top left root node
-        let node = LC::new_root(Child2D::TopLeft);
+        let node = LC2::new_root(Child2D::TopLeft);
         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::North), None);
         assert_eq!(
             node.same_depth_neighbour(NeighbourDirection2D::East),
-            Some(LC::new_root(Child2D::TopRight))
+            Some(LC2::new_root(Child2D::TopRight))
         );
         assert_eq!(
             node.same_depth_neighbour(NeighbourDirection2D::South),
-            Some(LC::new_root(Child2D::BottomLeft))
+            Some(LC2::new_root(Child2D::BottomLeft))
         );
         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::West), None);
 
         // Top right root node
-        let node = LC::new_root(Child2D::TopRight);
+        let node = LC2::new_root(Child2D::TopRight);
         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::North), None);
         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::East), None);
         assert_eq!(
             node.same_depth_neighbour(NeighbourDirection2D::South),
-            Some(LC::new_root(Child2D::BottomRight))
+            Some(LC2::new_root(Child2D::BottomRight))
         );
         assert_eq!(
             node.same_depth_neighbour(NeighbourDirection2D::West),
-            Some(LC::new_root(Child2D::TopLeft))
+            Some(LC2::new_root(Child2D::TopLeft))
         );
 
         // Test some node at depth 1
-        let node = LC::new_from_code_and_depth(0b00_11, 1).unwrap();
-        let north = LC::new_from_code_and_depth(0b10_01, 1).unwrap();
+        let node = LC2::new_from_code_and_depth(0b00_11, 1).unwrap();
+        let north = LC2::new_from_code_and_depth(0b10_01, 1).unwrap();
         assert_eq!(
             node.same_depth_neighbour(NeighbourDirection2D::North),
             Some(north)
         );
-        let east = LC::new_from_code_and_depth(0b01_10, 1).unwrap();
+        let east = LC2::new_from_code_and_depth(0b01_10, 1).unwrap();
         assert_eq!(
             node.same_depth_neighbour(NeighbourDirection2D::East),
             Some(east)
         );
-        let south = LC::new_from_code_and_depth(0b00_01, 1).unwrap();
+        let south = LC2::new_from_code_and_depth(0b00_01, 1).unwrap();
         assert_eq!(
             node.same_depth_neighbour(NeighbourDirection2D::South),
             Some(south)
         );
-        let west = LC::new_from_code_and_depth(0b00_10, 1).unwrap();
+        let west = LC2::new_from_code_and_depth(0b00_10, 1).unwrap();
         assert_eq!(
             node.same_depth_neighbour(NeighbourDirection2D::West),
             Some(west)
         );
 
-        let node = LC::new_from_code_and_depth(0b11_00, 1).unwrap();
-        let north = LC::new_from_code_and_depth(0b11_10, 1).unwrap();
+        let node = LC2::new_from_code_and_depth(0b11_00, 1).unwrap();
+        let north = LC2::new_from_code_and_depth(0b11_10, 1).unwrap();
         assert_eq!(
             node.same_depth_neighbour(NeighbourDirection2D::North),
             Some(north)
         );
-        let east = LC::new_from_code_and_depth(0b11_01, 1).unwrap();
+        let east = LC2::new_from_code_and_depth(0b11_01, 1).unwrap();
         assert_eq!(
             node.same_depth_neighbour(NeighbourDirection2D::East),
             Some(east)
         );
-        let south = LC::new_from_code_and_depth(0b01_10, 1).unwrap();
+        let south = LC2::new_from_code_and_depth(0b01_10, 1).unwrap();
         assert_eq!(
             node.same_depth_neighbour(NeighbourDirection2D::South),
             Some(south)
         );
-        let west = LC::new_from_code_and_depth(0b10_01, 1).unwrap();
+        let west = LC2::new_from_code_and_depth(0b10_01, 1).unwrap();
         assert_eq!(
             node.same_depth_neighbour(NeighbourDirection2D::West),
             Some(west)
         );
 
         // Test corners
-        let node = LC::new_from_code_and_depth(0b00_00, 1).unwrap();
-        let north = LC::new_from_code_and_depth(0b00_10, 1).unwrap();
+        let node = LC2::new_from_code_and_depth(0b00_00, 1).unwrap();
+        let north = LC2::new_from_code_and_depth(0b00_10, 1).unwrap();
         assert_eq!(
             node.same_depth_neighbour(NeighbourDirection2D::North),
             Some(north)
         );
-        let east = LC::new_from_code_and_depth(0b00_01, 1).unwrap();
+        let east = LC2::new_from_code_and_depth(0b00_01, 1).unwrap();
         assert_eq!(
             node.same_depth_neighbour(NeighbourDirection2D::East),
             Some(east)
@@ -344,43 +334,43 @@ mod test {
         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::South), None);
         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::West), None);
 
-        let node = LC::new_from_code_and_depth(0b01_01, 1).unwrap();
-        let north = LC::new_from_code_and_depth(0b01_11, 1).unwrap();
+        let node = LC2::new_from_code_and_depth(0b01_01, 1).unwrap();
+        let north = LC2::new_from_code_and_depth(0b01_11, 1).unwrap();
         assert_eq!(
             node.same_depth_neighbour(NeighbourDirection2D::North),
             Some(north)
         );
         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::East), None);
         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::South), None);
-        let west = LC::new_from_code_and_depth(0b01_00, 1).unwrap();
+        let west = LC2::new_from_code_and_depth(0b01_00, 1).unwrap();
         assert_eq!(
             node.same_depth_neighbour(NeighbourDirection2D::West),
             Some(west)
         );
 
-        let node = LC::new_from_code_and_depth(0b10_10, 1).unwrap();
+        let node = LC2::new_from_code_and_depth(0b10_10, 1).unwrap();
         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::North), None);
-        let east = LC::new_from_code_and_depth(0b10_11, 1).unwrap();
+        let east = LC2::new_from_code_and_depth(0b10_11, 1).unwrap();
         assert_eq!(
             node.same_depth_neighbour(NeighbourDirection2D::East),
             Some(east)
         );
-        let south = LC::new_from_code_and_depth(0b10_00, 1).unwrap();
+        let south = LC2::new_from_code_and_depth(0b10_00, 1).unwrap();
         assert_eq!(
             node.same_depth_neighbour(NeighbourDirection2D::South),
             Some(south)
         );
         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::West), None);
 
-        let node = LC::new_from_code_and_depth(0b11_11, 1).unwrap();
+        let node = LC2::new_from_code_and_depth(0b11_11, 1).unwrap();
         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::North), None);
         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::East), None);
-        let south = LC::new_from_code_and_depth(0b11_01, 1).unwrap();
+        let south = LC2::new_from_code_and_depth(0b11_01, 1).unwrap();
         assert_eq!(
             node.same_depth_neighbour(NeighbourDirection2D::South),
             Some(south)
         );
-        let west = LC::new_from_code_and_depth(0b11_10, 1).unwrap();
+        let west = LC2::new_from_code_and_depth(0b11_10, 1).unwrap();
         assert_eq!(
             node.same_depth_neighbour(NeighbourDirection2D::West),
             Some(west)
