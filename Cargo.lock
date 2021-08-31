@@ -5,3 +5,11 @@ version = 3
 [[package]]
 name = "locational_codes"
 version = "0.1.0"
+dependencies = [
+ "morton",
+]
+
+[[package]]
+name = "morton"
+version = "0.1.0"
+source = "git+https://github.com/SRaimondi/morton.git?branch=master#700275f54139e9693a2e96a9a0277caaf225fb57"
