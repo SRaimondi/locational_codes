@@ -159,6 +159,12 @@ impl common::LocationalCodeBase for LocationalCode2D {
     }
 }
 
+impl std::fmt::Debug for LocationalCode2D {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "LocationCode2D: 0b{:b}", self.internal)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
