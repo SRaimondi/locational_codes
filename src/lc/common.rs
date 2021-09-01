@@ -14,21 +14,29 @@ pub trait LocationalCodeBase: Copy + std::convert::Into<u64> {
     /// Smallest valid code.
     const SMALLEST_CODE: u64 = 1 << Self::PER_LEVEL_BITS;
     /// Largest valid code.
-    const LARGEST_CODE: u64 = (1 << (Self::MAX_INCLUSIVE_DEPTH * Self::PER_LEVEL_BITS + 1)) - 1;
+    const LARGEST_CODE: u64 =
+        (1 << ((Self::MAX_INCLUSIVE_DEPTH + 1) * Self::PER_LEVEL_BITS + 1)) - 1;
 
-    /// Create a new LC from the given raw code by trusting it's valid.
+    /// Create a new LC from the given raw code.
     /// # Safety
     /// The code is expected to be valid as there is no check on it for this constructor.
-    unsafe fn new_from_raw(code: u64) -> Self;
+    unsafe fn new_from_code_unchecked(code: u64) -> Self;
 
     /// Create a new LC from the given code, check that the given value is within the valid range
     /// of the LC.
     fn new_from_code(code: u64) -> Result<Self, LocationalCodeError> {
         if (Self::SMALLEST_CODE..=Self::LARGEST_CODE).contains(&code) {
-            Ok(unsafe { Self::new_from_raw(code) })
+            Ok(unsafe { Self::new_from_code_unchecked(code) })
         } else {
             Err(LocationalCodeError::InvalidRawCode)
         }
+    }
+
+    /// Create a new LC for the given code and adds the sentinel bit for the given depth.
+    /// # Safety
+    /// The code is expected to be valid and the depth also, no check is done on neither of them.
+    unsafe fn new_from_code_and_depth_unchecked(code: u64, depth: u32) -> Self {
+        Self::new_from_code_unchecked(helpers::add_sentinel_bit(code, depth, Self::PER_LEVEL_BITS))
     }
 
     /// Create a new LC from the given code and depth by adding the sentinel bit. Checks that the
@@ -63,7 +71,7 @@ pub trait LocationalCodeBase: Copy + std::convert::Into<u64> {
             None
         } else {
             // The parent code is simply computed by removing the bits of the current level
-            Some(unsafe { Self::new_from_raw(self.into() >> Self::PER_LEVEL_BITS) })
+            Some(unsafe { Self::new_from_code_unchecked(self.into() >> Self::PER_LEVEL_BITS) })
         }
     }
 
@@ -75,7 +83,7 @@ pub trait LocationalCodeBase: Copy + std::convert::Into<u64> {
     where
         T: std::convert::Into<u64>,
     {
-        Self::new_from_raw((self.into() << Self::PER_LEVEL_BITS) | child.into())
+        Self::new_from_code_unchecked((self.into() << Self::PER_LEVEL_BITS) | child.into())
     }
 
     /// Compute the LC of the child code for a type that can be converted to u64.

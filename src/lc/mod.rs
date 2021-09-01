@@ -5,7 +5,7 @@ use crate::lc::common::LocationalCodeBase;
 
 /// Helper enum representing the possible children in a node of the Quadtree. The value is set
 /// such that the bits are already the morton codes for a 2x2 grid.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[repr(u8)]
 pub enum Child2D {
     BottomLeft = 0b00,
@@ -21,16 +21,22 @@ impl std::convert::Into<u64> for Child2D {
     }
 }
 
-/// Small helper array useful to iterate over all the children nodes in morton order.
-pub const CHILDREN_2D: [Child2D; 4] = [
-    Child2D::BottomLeft,
-    Child2D::BottomRight,
-    Child2D::TopLeft,
-    Child2D::TopRight,
-];
+impl Child2D {
+    /// Returns an iterator over all possible values of Child2D.
+    #[inline]
+    pub fn iter() -> std::slice::Iter<'static, Self> {
+        const CHILDREN: [Child2D; 4] = [
+            Child2D::BottomLeft,
+            Child2D::BottomRight,
+            Child2D::TopLeft,
+            Child2D::TopRight,
+        ];
+        CHILDREN.iter()
+    }
+}
 
 /// Helper enum representing a direction from a node.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[repr(u8)]
 pub enum NeighbourDirection2D {
     North,
@@ -51,16 +57,18 @@ impl NeighbourDirection2D {
             Self::West => Self::East,
         }
     }
-}
 
-/// Small helper array useful to iterate over all the neighbour directions. The order is decided
-/// without any particular reason, starting from north and looping in clockwise direction.
-pub const NEIGHBOUR_DIRECTIONS_2D: [NeighbourDirection2D; 4] = [
-    NeighbourDirection2D::North,
-    NeighbourDirection2D::East,
-    NeighbourDirection2D::South,
-    NeighbourDirection2D::West,
-];
+    #[inline]
+    pub fn iter() -> std::slice::Iter<'static, Self> {
+        const DIRECTIONS: [NeighbourDirection2D; 4] = [
+            NeighbourDirection2D::North,
+            NeighbourDirection2D::East,
+            NeighbourDirection2D::South,
+            NeighbourDirection2D::West,
+        ];
+        DIRECTIONS.iter()
+    }
+}
 
 /// Struct representing a locational code for the 2D case.
 #[derive(Copy, Clone, Eq, PartialEq, Hash)]
@@ -153,7 +161,7 @@ impl common::LocationalCodeBase for LocationalCode2D {
     const PER_LEVEL_BITS: u32 = 2;
 
     #[inline]
-    unsafe fn new_from_raw(code: u64) -> Self {
+    unsafe fn new_from_code_unchecked(code: u64) -> Self {
         debug_assert!((Self::SMALLEST_CODE..=Self::LARGEST_CODE).contains(&code));
         Self { internal: code }
     }
@@ -161,7 +169,7 @@ impl common::LocationalCodeBase for LocationalCode2D {
 
 impl std::fmt::Debug for LocationalCode2D {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "LocationCode2D: 0b{:b}", self.internal)
+        write!(f, "LocationalCode2D: 0b{:b}", self.internal)
     }
 }
 

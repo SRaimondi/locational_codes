@@ -48,5 +48,10 @@ mod test {
                 1 << ((depth + 1) * PER_LEVEL_BITS)
             );
         }
+        assert_eq!(add_sentinel_bit(0b01_11, 1, PER_LEVEL_BITS), 0b1_01_11);
+        assert_eq!(
+            add_sentinel_bit(0b11_00_11, 2, PER_LEVEL_BITS),
+            0b1_11_00_11
+        );
     }
 }

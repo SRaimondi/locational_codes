@@ -12,4 +12,4 @@ dependencies = [
 [[package]]
 name = "morton"
 version = "0.1.0"
-source = "git+https://github.com/SRaimondi/morton.git?branch=master#700275f54139e9693a2e96a9a0277caaf225fb57"
+source = "git+https://github.com/SRaimondi/morton.git?branch=master#8e7de176eea229deef831d8663d0f09fdb73211e"
