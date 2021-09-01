@@ -71,7 +71,7 @@ impl<const PLB: u32> LocationalCode<PLB> {
     /// Computes the maximum index along a single axis. Equals to 2^(depth + 1).
     /// Panics if the given depth is larger than the maximum allowed.
     #[inline]
-    fn max_index_for_depth(depth: u32) -> u32 {
+    pub fn max_index_for_depth(depth: u32) -> u32 {
         assert!(Self::is_valid_depth(depth));
         1 << (depth + 1)
     }
