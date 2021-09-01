@@ -4,29 +4,29 @@
 // /// are already the morton codes for a 2x2 grid.
 // #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 // #[repr(u8)]
-// pub enum Child2D {
+// pub enum Child {
 //     BottomLeft = 0b00,
 //     BottomRight = 0b01,
 //     TopLeft = 0b10,
 //     TopRight = 0b11,
 // }
 //
-// impl std::convert::Into<u64> for Child2D {
+// impl std::convert::Into<u64> for Child {
 //     #[inline]
 //     fn into(self) -> u64 {
 //         self as u64
 //     }
 // }
 //
-// impl Child2D {
+// impl Child {
 //     /// Return an iterator over all possible values.
 //     #[inline]
 //     pub fn iter() -> std::slice::Iter<'static, Self> {
-//         const CHILDREN: [Child2D; 4] = [
-//             Child2D::BottomLeft,
-//             Child2D::BottomRight,
-//             Child2D::TopLeft,
-//             Child2D::TopRight,
+//         const CHILDREN: [Child; 4] = [
+//             Child::BottomLeft,
+//             Child::BottomRight,
+//             Child::TopLeft,
+//             Child::TopRight,
 //         ];
 //         CHILDREN.iter()
 //     }
@@ -90,7 +90,7 @@
 // impl LocationalCode2D {
 //     /// Create new LC representing a root node.
 //     #[inline]
-//     pub const fn new_root(child: Child2D) -> Self {
+//     pub const fn new_root(child: Child) -> Self {
 //         const ROOT_SENTINEL_MASK: u64 = 0b100;
 //         Self {
 //             internal: ROOT_SENTINEL_MASK | child as u64,
@@ -104,10 +104,10 @@
 //     ) -> Option<(Self, Self)> {
 //         if self.can_have_children() {
 //             let children = match neighbour_direction {
-//                 NeighbourDirection2D::North => (Child2D::TopLeft, Child2D::TopRight),
-//                 NeighbourDirection2D::East => (Child2D::BottomRight, Child2D::TopRight),
-//                 NeighbourDirection2D::South => (Child2D::BottomLeft, Child2D::BottomRight),
-//                 NeighbourDirection2D::West => (Child2D::BottomLeft, Child2D::TopLeft),
+//                 NeighbourDirection2D::North => (Child::TopLeft, Child::TopRight),
+//                 NeighbourDirection2D::East => (Child::BottomRight, Child::TopRight),
+//                 NeighbourDirection2D::South => (Child::BottomLeft, Child::BottomRight),
+//                 NeighbourDirection2D::West => (Child::BottomLeft, Child::TopLeft),
 //             };
 //             Some((
 //                 self.child_code(children.0).unwrap(),
@@ -179,16 +179,16 @@
 //     #[test]
 //     fn test_root_creation() {
 //         assert_eq!(
-//             LocationalCode2D::new_root(Child2D::BottomLeft).internal,
+//             LocationalCode2D::new_root(Child::BottomLeft).internal,
 //             0b100
 //         );
 //         assert_eq!(
-//             LocationalCode2D::new_root(Child2D::BottomRight).internal,
+//             LocationalCode2D::new_root(Child::BottomRight).internal,
 //             0b101
 //         );
-//         assert_eq!(LocationalCode2D::new_root(Child2D::TopLeft).internal, 0b110);
+//         assert_eq!(LocationalCode2D::new_root(Child::TopLeft).internal, 0b110);
 //         assert_eq!(
-//             LocationalCode2D::new_root(Child2D::TopRight).internal,
+//             LocationalCode2D::new_root(Child::TopRight).internal,
 //             0b111
 //         );
 //     }
@@ -229,21 +229,21 @@
 //
 //     #[test]
 //     fn test_child_code() {
-//         let root = LocationalCode2D::new_root(Child2D::TopLeft);
+//         let root = LocationalCode2D::new_root(Child::TopLeft);
 //         assert_eq!(
-//             root.child_code(Child2D::BottomLeft).unwrap().internal,
+//             root.child_code(Child::BottomLeft).unwrap().internal,
 //             0b1_10_00
 //         );
 //         assert_eq!(
-//             root.child_code(Child2D::BottomRight).unwrap().internal,
+//             root.child_code(Child::BottomRight).unwrap().internal,
 //             0b1_10_01
 //         );
 //         assert_eq!(
-//             root.child_code(Child2D::TopLeft).unwrap().internal,
+//             root.child_code(Child::TopLeft).unwrap().internal,
 //             0b1_10_10
 //         );
 //         assert_eq!(
-//             root.child_code(Child2D::TopRight).unwrap().internal,
+//             root.child_code(Child::TopRight).unwrap().internal,
 //             0b1_10_11
 //         );
 //     }
@@ -251,55 +251,55 @@
 //     #[test]
 //     fn test_neighbour_code() {
 //         // Bottom left root node
-//         let node = LocationalCode2D::new_root(Child2D::BottomLeft);
+//         let node = LocationalCode2D::new_root(Child::BottomLeft);
 //         assert_eq!(
 //             node.same_depth_neighbour(NeighbourDirection2D::North),
-//             Some(LocationalCode2D::new_root(Child2D::TopLeft))
+//             Some(LocationalCode2D::new_root(Child::TopLeft))
 //         );
 //         assert_eq!(
 //             node.same_depth_neighbour(NeighbourDirection2D::East),
-//             Some(LocationalCode2D::new_root(Child2D::BottomRight))
+//             Some(LocationalCode2D::new_root(Child::BottomRight))
 //         );
 //         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::South), None);
 //         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::West), None);
 //
 //         // Bottom right root node
-//         let node = LocationalCode2D::new_root(Child2D::BottomRight);
+//         let node = LocationalCode2D::new_root(Child::BottomRight);
 //         assert_eq!(
 //             node.same_depth_neighbour(NeighbourDirection2D::North),
-//             Some(LocationalCode2D::new_root(Child2D::TopRight))
+//             Some(LocationalCode2D::new_root(Child::TopRight))
 //         );
 //         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::East), None);
 //         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::South), None);
 //         assert_eq!(
 //             node.same_depth_neighbour(NeighbourDirection2D::West),
-//             Some(LocationalCode2D::new_root(Child2D::BottomLeft))
+//             Some(LocationalCode2D::new_root(Child::BottomLeft))
 //         );
 //
 //         // Top left root node
-//         let node = LocationalCode2D::new_root(Child2D::TopLeft);
+//         let node = LocationalCode2D::new_root(Child::TopLeft);
 //         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::North), None);
 //         assert_eq!(
 //             node.same_depth_neighbour(NeighbourDirection2D::East),
-//             Some(LocationalCode2D::new_root(Child2D::TopRight))
+//             Some(LocationalCode2D::new_root(Child::TopRight))
 //         );
 //         assert_eq!(
 //             node.same_depth_neighbour(NeighbourDirection2D::South),
-//             Some(LocationalCode2D::new_root(Child2D::BottomLeft))
+//             Some(LocationalCode2D::new_root(Child::BottomLeft))
 //         );
 //         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::West), None);
 //
 //         // Top right root node
-//         let node = LocationalCode2D::new_root(Child2D::TopRight);
+//         let node = LocationalCode2D::new_root(Child::TopRight);
 //         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::North), None);
 //         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::East), None);
 //         assert_eq!(
 //             node.same_depth_neighbour(NeighbourDirection2D::South),
-//             Some(LocationalCode2D::new_root(Child2D::BottomRight))
+//             Some(LocationalCode2D::new_root(Child::BottomRight))
 //         );
 //         assert_eq!(
 //             node.same_depth_neighbour(NeighbourDirection2D::West),
-//             Some(LocationalCode2D::new_root(Child2D::TopLeft))
+//             Some(LocationalCode2D::new_root(Child::TopLeft))
 //         );
 //
 //         // Test some node at depth 1

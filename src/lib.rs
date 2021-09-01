@@ -172,22 +172,22 @@ pub mod quadtree {
     /// The value is set such that the bits are already the morton codes for a 2x2 grid.
     #[derive(Copy, Clone, Debug, Eq, PartialEq)]
     #[repr(u8)]
-    pub enum Child2D {
+    pub enum Child {
         BottomLeft = 0b00,
         BottomRight = 0b01,
         TopLeft = 0b10,
         TopRight = 0b11,
     }
 
-    impl Child2D {
+    impl Child {
         /// Return an iterator over all possible values.
         #[inline]
         pub fn iter() -> std::slice::Iter<'static, Self> {
-            const CHILDREN: [Child2D; 4] = [
-                Child2D::BottomLeft,
-                Child2D::BottomRight,
-                Child2D::TopLeft,
-                Child2D::TopRight,
+            const CHILDREN: [Child; 4] = [
+                Child::BottomLeft,
+                Child::BottomRight,
+                Child::TopLeft,
+                Child::TopRight,
             ];
             CHILDREN.iter()
         }
@@ -229,7 +229,7 @@ pub mod quadtree {
         }
     }
 
-    locational_code_impl!(LocationalCode, 2, Child2D);
+    locational_code_impl!(LocationalCode, 2, Child);
 
     impl LocationalCode {
         /// For a given code, returns the codes of the children of the node for the given neighbour direction.
@@ -239,10 +239,10 @@ pub mod quadtree {
         ) -> Option<(Self, Self)> {
             if self.can_have_children() {
                 let children = match neighbour_direction {
-                    NeighbourDirection2D::North => (Child2D::TopLeft, Child2D::TopRight),
-                    NeighbourDirection2D::East => (Child2D::BottomRight, Child2D::TopRight),
-                    NeighbourDirection2D::South => (Child2D::BottomLeft, Child2D::BottomRight),
-                    NeighbourDirection2D::West => (Child2D::BottomLeft, Child2D::TopLeft),
+                    NeighbourDirection2D::North => (Child::TopLeft, Child::TopRight),
+                    NeighbourDirection2D::East => (Child::BottomRight, Child::TopRight),
+                    NeighbourDirection2D::South => (Child::BottomLeft, Child::BottomRight),
+                    NeighbourDirection2D::West => (Child::BottomLeft, Child::TopLeft),
                 };
                 Some(unsafe {
                     (
@@ -320,10 +320,10 @@ pub mod quadtree {
 
         #[test]
         fn test_root_creation() {
-            assert_eq!(LocationalCode::new_root(Child2D::BottomLeft).bits, 0b100);
-            assert_eq!(LocationalCode::new_root(Child2D::BottomRight).bits, 0b101);
-            assert_eq!(LocationalCode::new_root(Child2D::TopLeft).bits, 0b110);
-            assert_eq!(LocationalCode::new_root(Child2D::TopRight).bits, 0b111);
+            assert_eq!(LocationalCode::new_root(Child::BottomLeft).bits, 0b100);
+            assert_eq!(LocationalCode::new_root(Child::BottomRight).bits, 0b101);
+            assert_eq!(LocationalCode::new_root(Child::TopLeft).bits, 0b110);
+            assert_eq!(LocationalCode::new_root(Child::TopRight).bits, 0b111);
         }
 
         #[test]
@@ -362,71 +362,71 @@ pub mod quadtree {
 
         #[test]
         fn test_child_code() {
-            let root = LocationalCode::new_root(Child2D::TopLeft);
+            let root = LocationalCode::new_root(Child::TopLeft);
             assert_eq!(
-                root.child_code(Child2D::BottomLeft).unwrap().bits,
+                root.child_code(Child::BottomLeft).unwrap().bits,
                 0b1_10_00
             );
             assert_eq!(
-                root.child_code(Child2D::BottomRight).unwrap().bits,
+                root.child_code(Child::BottomRight).unwrap().bits,
                 0b1_10_01
             );
-            assert_eq!(root.child_code(Child2D::TopLeft).unwrap().bits, 0b1_10_10);
-            assert_eq!(root.child_code(Child2D::TopRight).unwrap().bits, 0b1_10_11);
+            assert_eq!(root.child_code(Child::TopLeft).unwrap().bits, 0b1_10_10);
+            assert_eq!(root.child_code(Child::TopRight).unwrap().bits, 0b1_10_11);
         }
 
         #[test]
         fn test_neighbour_code() {
             // Bottom left root node
-            let node = LocationalCode::new_root(Child2D::BottomLeft);
+            let node = LocationalCode::new_root(Child::BottomLeft);
             assert_eq!(
                 node.same_depth_neighbour(NeighbourDirection2D::North),
-                Some(LocationalCode::new_root(Child2D::TopLeft))
+                Some(LocationalCode::new_root(Child::TopLeft))
             );
             assert_eq!(
                 node.same_depth_neighbour(NeighbourDirection2D::East),
-                Some(LocationalCode::new_root(Child2D::BottomRight))
+                Some(LocationalCode::new_root(Child::BottomRight))
             );
             assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::South), None);
             assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::West), None);
 
             // Bottom right root node
-            let node = LocationalCode::new_root(Child2D::BottomRight);
+            let node = LocationalCode::new_root(Child::BottomRight);
             assert_eq!(
                 node.same_depth_neighbour(NeighbourDirection2D::North),
-                Some(LocationalCode::new_root(Child2D::TopRight))
+                Some(LocationalCode::new_root(Child::TopRight))
             );
             assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::East), None);
             assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::South), None);
             assert_eq!(
                 node.same_depth_neighbour(NeighbourDirection2D::West),
-                Some(LocationalCode::new_root(Child2D::BottomLeft))
+                Some(LocationalCode::new_root(Child::BottomLeft))
             );
 
             // Top left root node
-            let node = LocationalCode::new_root(Child2D::TopLeft);
+            let node = LocationalCode::new_root(Child::TopLeft);
             assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::North), None);
             assert_eq!(
                 node.same_depth_neighbour(NeighbourDirection2D::East),
-                Some(LocationalCode::new_root(Child2D::TopRight))
+                Some(LocationalCode::new_root(Child::TopRight))
             );
             assert_eq!(
                 node.same_depth_neighbour(NeighbourDirection2D::South),
-                Some(LocationalCode::new_root(Child2D::BottomLeft))
+                Some(LocationalCode::new_root(Child::BottomLeft))
             );
             assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::West), None);
 
             // Top right root node
-            let node = LocationalCode::new_root(Child2D::TopRight);
+            let node = LocationalCode::new_root(Child::TopRight);
             assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::North), None);
             assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::East), None);
             assert_eq!(
                 node.same_depth_neighbour(NeighbourDirection2D::South),
-                Some(LocationalCode::new_root(Child2D::BottomRight))
+                Some(LocationalCode::new_root(Child::BottomRight))
             );
             assert_eq!(
                 node.same_depth_neighbour(NeighbourDirection2D::West),
-                Some(LocationalCode::new_root(Child2D::TopLeft))
+                Some(LocationalCode::new_root(Child::TopLeft))
             );
 
             // Test some node at depth 1
