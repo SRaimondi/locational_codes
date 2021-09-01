@@ -84,6 +84,12 @@ impl std::convert::Into<u64> for LocationalCode2D {
     }
 }
 
+impl std::fmt::Debug for LocationalCode2D {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "LocationalCode2D: 0b{:b}", self.internal)
+    }
+}
+
 impl LocationalCode2D {
     #[inline]
     pub const fn new_root(child: Child2D) -> Self {
@@ -165,12 +171,6 @@ impl common::LocationalCodeBase for LocationalCode2D {
     unsafe fn new_from_code_unchecked(code: u64) -> Self {
         debug_assert!((Self::SMALLEST_CODE..=Self::LARGEST_CODE).contains(&code));
         Self { internal: code }
-    }
-}
-
-impl std::fmt::Debug for LocationalCode2D {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "LocationalCode2D: 0b{:b}", self.internal)
     }
 }
 
