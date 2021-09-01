@@ -39,7 +39,12 @@ macro_rules! locational_code_impl {
             /// Helper function to check if a code is in the valid range.
             fn is_valid_code(code: u64) -> bool {
                 const MIN: u64 = 1 << $lvl_bits;
-                const MAX: u64 = (1 << (($name::MAX_INCLUSIVE_DEPTH + 1) * $lvl_bits + 1)) - 1;
+                const MAX_USED_BITS: u32 = ($name::MAX_INCLUSIVE_DEPTH + 1) * $lvl_bits + 1;
+                const MAX: u64 = if MAX_USED_BITS == u64::BITS {
+                    u64::MAX
+                } else {
+                    (1 << (($name::MAX_INCLUSIVE_DEPTH + 1) * $lvl_bits + 1)) - 1
+                };
                 (MIN..=MAX).contains(&code)
             }
 
@@ -257,10 +262,7 @@ pub mod quadtree {
 
         /// For a given code, return the code of the neighbour at the same depth for the given direction.
         /// Returns None if the code is at a boundary and the direction of the neighbour would go outside.
-        pub fn same_depth_neighbour(
-            self,
-            neighbour_direction: NeighbourDirection,
-        ) -> Option<Self> {
+        pub fn same_depth_neighbour(self, neighbour_direction: NeighbourDirection) -> Option<Self> {
             // Get depth of the node
             let depth = self.depth();
             // Compute maximum index along an axis for the depth
@@ -363,14 +365,8 @@ pub mod quadtree {
         #[test]
         fn test_child_code() {
             let root = LocationalCode::new_root(Child::TopLeft);
-            assert_eq!(
-                root.child_code(Child::BottomLeft).unwrap().bits,
-                0b1_10_00
-            );
-            assert_eq!(
-                root.child_code(Child::BottomRight).unwrap().bits,
-                0b1_10_01
-            );
+            assert_eq!(root.child_code(Child::BottomLeft).unwrap().bits, 0b1_10_00);
+            assert_eq!(root.child_code(Child::BottomRight).unwrap().bits, 0b1_10_01);
             assert_eq!(root.child_code(Child::TopLeft).unwrap().bits, 0b1_10_10);
             assert_eq!(root.child_code(Child::TopRight).unwrap().bits, 0b1_10_11);
         }
@@ -532,4 +528,85 @@ pub mod quadtree {
             );
         }
     }
+}
+
+pub mod octree {
+    use super::{helpers, LocationalCodeError};
+
+    /// Helper enum representing the possible children for an octree locational code.
+    /// The value is set such that the bits are already the morton codes for a 2x2x2 grid.
+    #[derive(Copy, Clone, Debug, Eq, PartialEq)]
+    #[repr(u8)]
+    pub enum Child {
+        BackBottomLeft = 0b000,
+        BackBottomRight = 0b001,
+        BackTopLeft = 0b010,
+        BackTopRight = 0b011,
+        FrontBottomLeft = 0b100,
+        FrontBottomRight = 0b101,
+        FrontTopLeft = 0b110,
+        FrontTopRight = 0b111,
+    }
+
+    impl Child {
+        /// Return an iterator over all possible values.
+        #[inline]
+        pub fn iter() -> std::slice::Iter<'static, Self> {
+            const CHILDREN: [Child; 8] = [
+                Child::BackBottomLeft,
+                Child::BackBottomRight,
+                Child::BackTopLeft,
+                Child::BackTopRight,
+                Child::FrontBottomLeft,
+                Child::FrontBottomRight,
+                Child::FrontTopLeft,
+                Child::FrontTopRight,
+            ];
+            CHILDREN.iter()
+        }
+    }
+
+    /// Helper enum representing a direction from a node.
+    #[derive(Copy, Clone, Debug, Eq, PartialEq)]
+    #[repr(u8)]
+    pub enum NeighbourDirection {
+        PositiveX,
+        NegativeX,
+        PositiveY,
+        NegativeY,
+        PositiveZ,
+        NegativeZ,
+    }
+
+    impl NeighbourDirection {
+        /// Helper function to give the opposite direction from a given one. This is used in the
+        /// neighbour search for children.
+        #[inline]
+        pub fn opposite(self) -> Self {
+            match self {
+                Self::PositiveX => Self::NegativeX,
+                Self::NegativeX => Self::PositiveX,
+                Self::PositiveY => Self::NegativeY,
+                Self::NegativeY => Self::PositiveY,
+                Self::PositiveZ => Self::NegativeZ,
+                Self::NegativeZ => Self::PositiveZ,
+            }
+        }
+
+        /// Returns an iterator over all possible values.
+        #[inline]
+        pub fn iter() -> std::slice::Iter<'static, Self> {
+            const DIRECTIONS: [NeighbourDirection; 6] = [
+                NeighbourDirection::PositiveX,
+                NeighbourDirection::NegativeX,
+                NeighbourDirection::PositiveY,
+                NeighbourDirection::NegativeY,
+                NeighbourDirection::PositiveZ,
+                NeighbourDirection::NegativeZ,
+            ];
+            DIRECTIONS.iter()
+        }
+    }
+
+    locational_code_impl!(LocationalCode, 3, Child);
 }
