@@ -35,14 +35,14 @@
 // /// Helper enum representing a direction from a node.
 // #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 // #[repr(u8)]
-// pub enum NeighbourDirection2D {
+// pub enum NeighbourDirection {
 //     North,
 //     East,
 //     South,
 //     West,
 // }
 //
-// impl NeighbourDirection2D {
+// impl NeighbourDirection {
 //     /// Helper function to give the opposite direction from a given one. This is used in the
 //     /// neighbour search for children.
 //     #[inline]
@@ -58,11 +58,11 @@
 //     /// Returns an iterator over all possible values.
 //     #[inline]
 //     pub fn iter() -> std::slice::Iter<'static, Self> {
-//         const DIRECTIONS: [NeighbourDirection2D; 4] = [
-//             NeighbourDirection2D::North,
-//             NeighbourDirection2D::East,
-//             NeighbourDirection2D::South,
-//             NeighbourDirection2D::West,
+//         const DIRECTIONS: [NeighbourDirection; 4] = [
+//             NeighbourDirection::North,
+//             NeighbourDirection::East,
+//             NeighbourDirection::South,
+//             NeighbourDirection::West,
 //         ];
 //         DIRECTIONS.iter()
 //     }
@@ -100,14 +100,14 @@
 //     /// For a given code, returns the codes of the children of the node for the given neighbour direction.
 //     pub fn neighbour_direction_children_codes(
 //         self,
-//         neighbour_direction: NeighbourDirection2D,
+//         neighbour_direction: NeighbourDirection,
 //     ) -> Option<(Self, Self)> {
 //         if self.can_have_children() {
 //             let children = match neighbour_direction {
-//                 NeighbourDirection2D::North => (Child::TopLeft, Child::TopRight),
-//                 NeighbourDirection2D::East => (Child::BottomRight, Child::TopRight),
-//                 NeighbourDirection2D::South => (Child::BottomLeft, Child::BottomRight),
-//                 NeighbourDirection2D::West => (Child::BottomLeft, Child::TopLeft),
+//                 NeighbourDirection::North => (Child::TopLeft, Child::TopRight),
+//                 NeighbourDirection::East => (Child::BottomRight, Child::TopRight),
+//                 NeighbourDirection::South => (Child::BottomLeft, Child::BottomRight),
+//                 NeighbourDirection::West => (Child::BottomLeft, Child::TopLeft),
 //             };
 //             Some((
 //                 self.child_code(children.0).unwrap(),
@@ -120,7 +120,7 @@
 //
 //     /// For a given code, return the code of the neighbour at the same depth for the given direction.
 //     /// Returns None if the code is at a boundary and the direction of the neighbour would go outside.
-//     pub fn same_depth_neighbour(self, neighbour_direction: NeighbourDirection2D) -> Option<Self> {
+//     pub fn same_depth_neighbour(self, neighbour_direction: NeighbourDirection) -> Option<Self> {
 //         // Get depth of the node
 //         let depth = self.depth();
 //         // Compute maximum index along an axis for the depth
@@ -129,28 +129,28 @@
 //         // Decode the code into the 2 coordinates (i, j)
 //         let coordinates = morton::decode_2d(raw_code_no_sentinel);
 //         let (new_i, new_j) = match neighbour_direction {
-//             NeighbourDirection2D::North => {
+//             NeighbourDirection::North => {
 //                 if coordinates.1 == max_index {
 //                     return None;
 //                 } else {
 //                     (coordinates.0, coordinates.1 + 1)
 //                 }
 //             }
-//             NeighbourDirection2D::East => {
+//             NeighbourDirection::East => {
 //                 if coordinates.0 == max_index {
 //                     return None;
 //                 } else {
 //                     (coordinates.0 + 1, coordinates.1)
 //                 }
 //             }
-//             NeighbourDirection2D::South => {
+//             NeighbourDirection::South => {
 //                 if coordinates.1 == 0 {
 //                     return None;
 //                 } else {
 //                     (coordinates.0, coordinates.1 - 1)
 //                 }
 //             }
-//             NeighbourDirection2D::West => {
+//             NeighbourDirection::West => {
 //                 if coordinates.0 == 0 {
 //                     return None;
 //                 } else {
@@ -253,52 +253,52 @@
 //         // Bottom left root node
 //         let node = LocationalCode2D::new_root(Child::BottomLeft);
 //         assert_eq!(
-//             node.same_depth_neighbour(NeighbourDirection2D::North),
+//             node.same_depth_neighbour(NeighbourDirection::North),
 //             Some(LocationalCode2D::new_root(Child::TopLeft))
 //         );
 //         assert_eq!(
-//             node.same_depth_neighbour(NeighbourDirection2D::East),
+//             node.same_depth_neighbour(NeighbourDirection::East),
 //             Some(LocationalCode2D::new_root(Child::BottomRight))
 //         );
-//         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::South), None);
-//         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::West), None);
+//         assert_eq!(node.same_depth_neighbour(NeighbourDirection::South), None);
+//         assert_eq!(node.same_depth_neighbour(NeighbourDirection::West), None);
 //
 //         // Bottom right root node
 //         let node = LocationalCode2D::new_root(Child::BottomRight);
 //         assert_eq!(
-//             node.same_depth_neighbour(NeighbourDirection2D::North),
+//             node.same_depth_neighbour(NeighbourDirection::North),
 //             Some(LocationalCode2D::new_root(Child::TopRight))
 //         );
-//         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::East), None);
-//         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::South), None);
+//         assert_eq!(node.same_depth_neighbour(NeighbourDirection::East), None);
+//         assert_eq!(node.same_depth_neighbour(NeighbourDirection::South), None);
 //         assert_eq!(
-//             node.same_depth_neighbour(NeighbourDirection2D::West),
+//             node.same_depth_neighbour(NeighbourDirection::West),
 //             Some(LocationalCode2D::new_root(Child::BottomLeft))
 //         );
 //
 //         // Top left root node
 //         let node = LocationalCode2D::new_root(Child::TopLeft);
-//         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::North), None);
+//         assert_eq!(node.same_depth_neighbour(NeighbourDirection::North), None);
 //         assert_eq!(
-//             node.same_depth_neighbour(NeighbourDirection2D::East),
+//             node.same_depth_neighbour(NeighbourDirection::East),
 //             Some(LocationalCode2D::new_root(Child::TopRight))
 //         );
 //         assert_eq!(
-//             node.same_depth_neighbour(NeighbourDirection2D::South),
+//             node.same_depth_neighbour(NeighbourDirection::South),
 //             Some(LocationalCode2D::new_root(Child::BottomLeft))
 //         );
-//         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::West), None);
+//         assert_eq!(node.same_depth_neighbour(NeighbourDirection::West), None);
 //
 //         // Top right root node
 //         let node = LocationalCode2D::new_root(Child::TopRight);
-//         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::North), None);
-//         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::East), None);
+//         assert_eq!(node.same_depth_neighbour(NeighbourDirection::North), None);
+//         assert_eq!(node.same_depth_neighbour(NeighbourDirection::East), None);
 //         assert_eq!(
-//             node.same_depth_neighbour(NeighbourDirection2D::South),
+//             node.same_depth_neighbour(NeighbourDirection::South),
 //             Some(LocationalCode2D::new_root(Child::BottomRight))
 //         );
 //         assert_eq!(
-//             node.same_depth_neighbour(NeighbourDirection2D::West),
+//             node.same_depth_neighbour(NeighbourDirection::West),
 //             Some(LocationalCode2D::new_root(Child::TopLeft))
 //         );
 //
@@ -306,44 +306,44 @@
 //         let node = LocationalCode2D::new_from_code_and_depth(0b00_11, 1).unwrap();
 //         let north = LocationalCode2D::new_from_code_and_depth(0b10_01, 1).unwrap();
 //         assert_eq!(
-//             node.same_depth_neighbour(NeighbourDirection2D::North),
+//             node.same_depth_neighbour(NeighbourDirection::North),
 //             Some(north)
 //         );
 //         let east = LocationalCode2D::new_from_code_and_depth(0b01_10, 1).unwrap();
 //         assert_eq!(
-//             node.same_depth_neighbour(NeighbourDirection2D::East),
+//             node.same_depth_neighbour(NeighbourDirection::East),
 //             Some(east)
 //         );
 //         let south = LocationalCode2D::new_from_code_and_depth(0b00_01, 1).unwrap();
 //         assert_eq!(
-//             node.same_depth_neighbour(NeighbourDirection2D::South),
+//             node.same_depth_neighbour(NeighbourDirection::South),
 //             Some(south)
 //         );
 //         let west = LocationalCode2D::new_from_code_and_depth(0b00_10, 1).unwrap();
 //         assert_eq!(
-//             node.same_depth_neighbour(NeighbourDirection2D::West),
+//             node.same_depth_neighbour(NeighbourDirection::West),
 //             Some(west)
 //         );
 //
 //         let node = LocationalCode2D::new_from_code_and_depth(0b11_00, 1).unwrap();
 //         let north = LocationalCode2D::new_from_code_and_depth(0b11_10, 1).unwrap();
 //         assert_eq!(
-//             node.same_depth_neighbour(NeighbourDirection2D::North),
+//             node.same_depth_neighbour(NeighbourDirection::North),
 //             Some(north)
 //         );
 //         let east = LocationalCode2D::new_from_code_and_depth(0b11_01, 1).unwrap();
 //         assert_eq!(
-//             node.same_depth_neighbour(NeighbourDirection2D::East),
+//             node.same_depth_neighbour(NeighbourDirection::East),
 //             Some(east)
 //         );
 //         let south = LocationalCode2D::new_from_code_and_depth(0b01_10, 1).unwrap();
 //         assert_eq!(
-//             node.same_depth_neighbour(NeighbourDirection2D::South),
+//             node.same_depth_neighbour(NeighbourDirection::South),
 //             Some(south)
 //         );
 //         let west = LocationalCode2D::new_from_code_and_depth(0b10_01, 1).unwrap();
 //         assert_eq!(
-//             node.same_depth_neighbour(NeighbourDirection2D::West),
+//             node.same_depth_neighbour(NeighbourDirection::West),
 //             Some(west)
 //         );
 //
@@ -351,56 +351,56 @@
 //         let node = LocationalCode2D::new_from_code_and_depth(0b00_00, 1).unwrap();
 //         let north = LocationalCode2D::new_from_code_and_depth(0b00_10, 1).unwrap();
 //         assert_eq!(
-//             node.same_depth_neighbour(NeighbourDirection2D::North),
+//             node.same_depth_neighbour(NeighbourDirection::North),
 //             Some(north)
 //         );
 //         let east = LocationalCode2D::new_from_code_and_depth(0b00_01, 1).unwrap();
 //         assert_eq!(
-//             node.same_depth_neighbour(NeighbourDirection2D::East),
+//             node.same_depth_neighbour(NeighbourDirection::East),
 //             Some(east)
 //         );
-//         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::South), None);
-//         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::West), None);
+//         assert_eq!(node.same_depth_neighbour(NeighbourDirection::South), None);
+//         assert_eq!(node.same_depth_neighbour(NeighbourDirection::West), None);
 //
 //         let node = LocationalCode2D::new_from_code_and_depth(0b01_01, 1).unwrap();
 //         let north = LocationalCode2D::new_from_code_and_depth(0b01_11, 1).unwrap();
 //         assert_eq!(
-//             node.same_depth_neighbour(NeighbourDirection2D::North),
+//             node.same_depth_neighbour(NeighbourDirection::North),
 //             Some(north)
 //         );
-//         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::East), None);
-//         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::South), None);
+//         assert_eq!(node.same_depth_neighbour(NeighbourDirection::East), None);
+//         assert_eq!(node.same_depth_neighbour(NeighbourDirection::South), None);
 //         let west = LocationalCode2D::new_from_code_and_depth(0b01_00, 1).unwrap();
 //         assert_eq!(
-//             node.same_depth_neighbour(NeighbourDirection2D::West),
+//             node.same_depth_neighbour(NeighbourDirection::West),
 //             Some(west)
 //         );
 //
 //         let node = LocationalCode2D::new_from_code_and_depth(0b10_10, 1).unwrap();
-//         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::North), None);
+//         assert_eq!(node.same_depth_neighbour(NeighbourDirection::North), None);
 //         let east = LocationalCode2D::new_from_code_and_depth(0b10_11, 1).unwrap();
 //         assert_eq!(
-//             node.same_depth_neighbour(NeighbourDirection2D::East),
+//             node.same_depth_neighbour(NeighbourDirection::East),
 //             Some(east)
 //         );
 //         let south = LocationalCode2D::new_from_code_and_depth(0b10_00, 1).unwrap();
 //         assert_eq!(
-//             node.same_depth_neighbour(NeighbourDirection2D::South),
+//             node.same_depth_neighbour(NeighbourDirection::South),
 //             Some(south)
 //         );
-//         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::West), None);
+//         assert_eq!(node.same_depth_neighbour(NeighbourDirection::West), None);
 //
 //         let node = LocationalCode2D::new_from_code_and_depth(0b11_11, 1).unwrap();
-//         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::North), None);
-//         assert_eq!(node.same_depth_neighbour(NeighbourDirection2D::East), None);
+//         assert_eq!(node.same_depth_neighbour(NeighbourDirection::North), None);
+//         assert_eq!(node.same_depth_neighbour(NeighbourDirection::East), None);
 //         let south = LocationalCode2D::new_from_code_and_depth(0b11_01, 1).unwrap();
 //         assert_eq!(
-//             node.same_depth_neighbour(NeighbourDirection2D::South),
+//             node.same_depth_neighbour(NeighbourDirection::South),
 //             Some(south)
 //         );
 //         let west = LocationalCode2D::new_from_code_and_depth(0b11_10, 1).unwrap();
 //         assert_eq!(
-//             node.same_depth_neighbour(NeighbourDirection2D::West),
+//             node.same_depth_neighbour(NeighbourDirection::West),
 //             Some(west)
 //         );
 //     }
