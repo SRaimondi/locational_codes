@@ -58,6 +58,7 @@ impl NeighbourDirection2D {
         }
     }
 
+    /// Returns an iterator over all possible values of NeighbourDirection2D.
     #[inline]
     pub fn iter() -> std::slice::Iter<'static, Self> {
         const DIRECTIONS: [NeighbourDirection2D; 4] = [
