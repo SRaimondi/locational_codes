@@ -17,6 +17,7 @@ pub enum LocationalCodeError {
     InvalidCodeWithSentinel,
     InvalidCodeWithoutSentinel,
     InvalidDepth,
+    InvalidChildBits,
 }
 
 macro_rules! locational_code_impl {
@@ -31,12 +32,14 @@ macro_rules! locational_code_impl {
             pub const MAX_INCLUSIVE_DEPTH: u32 = (u64::BITS - 1) / $lvl_bits - 1;
 
             /// Helper function to check that a code without the sentinel is in the valid range.
+            #[inline]
             fn is_valid_code_without_sentinel(code: u64) -> bool {
                 const MAX: u64 = (1 << ($name::MAX_INCLUSIVE_DEPTH + 1) * $lvl_bits) - 1;
                 (0..=MAX).contains(&code)
             }
 
             /// Helper function to check if a code is in the valid range.
+            #[inline]
             fn is_valid_code(code: u64) -> bool {
                 const MIN: u64 = 1 << $lvl_bits;
                 const MAX_USED_BITS: u32 = ($name::MAX_INCLUSIVE_DEPTH + 1) * $lvl_bits + 1;
@@ -49,6 +52,7 @@ macro_rules! locational_code_impl {
             }
 
             /// Helper function to check if a depth is valid.
+            #[inline]
             fn is_valid_depth(depth: u32) -> bool {
                 depth <= $name::MAX_INCLUSIVE_DEPTH
             }
@@ -73,6 +77,8 @@ macro_rules! locational_code_impl {
                 1 << (depth + 1)
             }
 
+            /// Create new locational code as root code for the given node child.
+            #[inline]
             pub fn new_root(child: $child) -> Self {
                 Self {
                     bits: (1 << $lvl_bits) | child as u64,
@@ -82,6 +88,7 @@ macro_rules! locational_code_impl {
             /// Create a new locational code from the given raw code.
             /// # Safety
             /// The code is expected to be valid as there is no check on it for this constructor.
+            #[inline]
             pub unsafe fn new_from_code_unchecked(code: u64) -> Self {
                 debug_assert!(Self::is_valid_code(code));
                 Self { bits: code }
@@ -89,6 +96,7 @@ macro_rules! locational_code_impl {
 
             /// Create a new locational code from the given code, check that the given value is within the
             /// valid range.
+            #[inline]
             pub fn new_from_code(code: u64) -> Result<Self, LocationalCodeError> {
                 if Self::is_valid_code(code) {
                     Ok(unsafe { Self::new_from_code_unchecked(code) })
@@ -100,12 +108,14 @@ macro_rules! locational_code_impl {
             /// Create a new locational code for the given code and depth.
             /// # Safety
             /// The code is expected to be valid and the depth too, no check is done on neither of them.
+            #[inline]
             pub unsafe fn new_from_code_and_depth_unchecked(code: u64, depth: u32) -> Self {
                 Self::new_from_code_unchecked(Self::add_sentinel_bit(code, depth))
             }
 
             /// Create a new locational code from the given code and depth. Checks both the code
             /// and the depth to be valid.
+            #[inline]
             pub fn new_from_code_and_depth(
                 code: u64,
                 depth: u32,
@@ -143,12 +153,33 @@ macro_rules! locational_code_impl {
                 }
             }
 
+            /// Compute the locational code of the child using the given bits.
+            /// # Safety
+            /// The caller is responsible for ensuring that ```self``` can have children and
+            /// the given bits to compute the child are in a valid range.
+            #[inline]
+            pub unsafe fn child_code_bits_unchecked(self, child_bits: u64) -> Self {
+                debug_assert!(child_bits < (1 << $lvl_bits));
+                Self::new_from_code_unchecked((self.bits << $lvl_bits) | child_bits)
+            }
+
+            /// Compute the locational code of the child for the given child bits. Returns an error
+            /// if the bits are larger than the maximum allowed.
+            #[inline]
+            pub fn child_code_bits(self, child_bits: u64) -> Result<Self, LocationalCodeError> {
+                if child_bits < (1 << $lvl_bits) {
+                    Ok(unsafe { self.child_code_bits_unchecked(child_bits) })
+                } else {
+                    Err(LocationalCodeError::InvalidChildBits)
+                }
+            }
+
             /// Compute the locational code of the child without checking if self can have children.
             /// # Safety
             /// The caller must be sure it's possible to compute a child code without loss of bits.
             #[inline]
             pub unsafe fn child_code_unchecked(self, child: $child) -> Self {
-                Self::new_from_code_unchecked((self.bits << $lvl_bits) | child as u64)
+                self.child_code_bits_unchecked(child as u64)
             }
 
             /// Compute the LC of the child code for a type that can be converted to u64.
@@ -237,22 +268,24 @@ pub mod quadtree {
     locational_code_impl!(LocationalCode, 2, Child);
 
     impl LocationalCode {
-        /// For a given code, returns the codes of the children of the node for the given neighbour direction.
+        /// For a given code, returns the codes of the children for the given neighbour direction.
+        #[inline]
         pub fn neighbour_direction_children_codes(
             self,
             neighbour_direction: NeighbourDirection,
         ) -> Option<(Self, Self)> {
             if self.can_have_children() {
-                let children = match neighbour_direction {
-                    NeighbourDirection::North => (Child::TopLeft, Child::TopRight),
-                    NeighbourDirection::East => (Child::BottomRight, Child::TopRight),
-                    NeighbourDirection::South => (Child::BottomLeft, Child::BottomRight),
-                    NeighbourDirection::West => (Child::BottomLeft, Child::TopLeft),
-                };
+                // Codes are encoded as couple of 2 bits for each direction
+                // North: shift = 0, TopRight | TopLeft
+                // East: shift = 4,  TopRight | BottomRight
+                // South: shift = 8,  BottomRight | BottomLeft
+                // West: shift = 12,  TopLeft | BottomLeft
+                const CHILDREN_MASK: u64 = 0b1000_0100_1101_1110;
+                let children_chunk = (CHILDREN_MASK >> 4 * neighbour_direction as u64) & 0b1111;
                 Some(unsafe {
                     (
-                        self.child_code_unchecked(children.0),
-                        self.child_code_unchecked(children.1),
+                        self.child_code_bits_unchecked(children_chunk & 0b11),
+                        self.child_code_bits_unchecked((children_chunk >> 2) & 0b11),
                     )
                 })
             } else {
@@ -609,4 +642,63 @@ pub mod octree {
     }
 
     locational_code_impl!(LocationalCode, 3, Child);
+
+    impl LocationalCode {
+        /// For a given code, returns the codes of the children for the given neighbour direction.
+        pub fn neighbour_direction_children_codes(
+            self,
+            neighbour_direction: NeighbourDirection,
+        ) -> Option<(Self, Self, Self, Self)> {
+            if self.can_have_children() {
+                let children = match neighbour_direction {
+                    NeighbourDirection::PositiveX => (
+                        Child::BackBottomRight,
+                        Child::BackTopRight,
+                        Child::FrontBottomRight,
+                        Child::FrontTopRight,
+                    ),
+                    NeighbourDirection::NegativeX => (
+                        Child::BackBottomLeft,
+                        Child::BackTopLeft,
+                        Child::FrontBottomLeft,
+                        Child::FrontTopLeft,
+                    ),
+                    NeighbourDirection::PositiveY => (
+                        Child::BackTopLeft,
+                        Child::BackTopRight,
+                        Child::FrontTopLeft,
+                        Child::FrontTopRight,
+                    ),
+                    NeighbourDirection::NegativeY => (
+                        Child::BackBottomLeft,
+                        Child::BackBottomRight,
+                        Child::FrontBottomLeft,
+                        Child::FrontBottomRight,
+                    ),
+                    NeighbourDirection::PositiveZ => (
+                        Child::FrontBottomLeft,
+                        Child::FrontBottomRight,
+                        Child::FrontTopLeft,
+                        Child::FrontTopRight,
+                    ),
+                    NeighbourDirection::NegativeZ => (
+                        Child::BackBottomLeft,
+                        Child::BackBottomRight,
+                        Child::BackTopLeft,
+                        Child::BackTopRight,
+                    ),
+                };
+                Some(unsafe {
+                    (
+                        self.child_code_unchecked(children.0),
+                        self.child_code_unchecked(children.1),
+                        self.child_code_unchecked(children.2),
+                        self.child_code_unchecked(children.3),
+                    )
+                })
+            } else {
+                None
+            }
+        }
+    }
 }
