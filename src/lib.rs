@@ -295,6 +295,7 @@ pub mod quadtree {
 
         /// For a given code, return the code of the neighbour at the same depth for the given direction.
         /// Returns None if the code is at a boundary and the direction of the neighbour would go outside.
+        #[inline]
         pub fn same_depth_neighbour(self, neighbour_direction: NeighbourDirection) -> Option<Self> {
             // Get depth of the node
             let depth = self.depth();
@@ -645,6 +646,7 @@ pub mod octree {
 
     impl LocationalCode {
         /// For a given code, returns the codes of the children for the given neighbour direction.
+        #[inline]
         pub fn neighbour_direction_children_codes(
             self,
             neighbour_direction: NeighbourDirection,
@@ -675,6 +677,7 @@ pub mod octree {
 
         /// For a given code, return the code of the neighbour at the same depth for the given direction.
         /// Returns None if the code is at a boundary and the direction of the neighbour would go outside.
+        #[inline]
         pub fn same_depth_neighbour(self, neighbour_direction: NeighbourDirection) -> Option<Self> {
             // Get depth of the node
             let depth = self.depth();
