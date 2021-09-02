@@ -650,55 +650,92 @@ pub mod octree {
             neighbour_direction: NeighbourDirection,
         ) -> Option<(Self, Self, Self, Self)> {
             if self.can_have_children() {
-                let children = match neighbour_direction {
-                    NeighbourDirection::PositiveX => (
-                        Child::BackBottomRight,
-                        Child::BackTopRight,
-                        Child::FrontBottomRight,
-                        Child::FrontTopRight,
-                    ),
-                    NeighbourDirection::NegativeX => (
-                        Child::BackBottomLeft,
-                        Child::BackTopLeft,
-                        Child::FrontBottomLeft,
-                        Child::FrontTopLeft,
-                    ),
-                    NeighbourDirection::PositiveY => (
-                        Child::BackTopLeft,
-                        Child::BackTopRight,
-                        Child::FrontTopLeft,
-                        Child::FrontTopRight,
-                    ),
-                    NeighbourDirection::NegativeY => (
-                        Child::BackBottomLeft,
-                        Child::BackBottomRight,
-                        Child::FrontBottomLeft,
-                        Child::FrontBottomRight,
-                    ),
-                    NeighbourDirection::PositiveZ => (
-                        Child::FrontBottomLeft,
-                        Child::FrontBottomRight,
-                        Child::FrontTopLeft,
-                        Child::FrontTopRight,
-                    ),
-                    NeighbourDirection::NegativeZ => (
-                        Child::BackBottomLeft,
-                        Child::BackBottomRight,
-                        Child::BackTopLeft,
-                        Child::BackTopRight,
-                    ),
-                };
+                const CHILDREN_MASKS: [u16; 6] = [
+                    0b111_101_011_001,
+                    0b110_100_010_000,
+                    0b111_110_011_010,
+                    0b101_100_001_000,
+                    0b111_110_101_100,
+                    0b011_010_001_000,
+                ];
+                let children = CHILDREN_MASKS[neighbour_direction as usize] as u64;
+                const CHILD_BITS_MASK: u64 = 0b111;
                 Some(unsafe {
                     (
-                        self.child_code_unchecked(children.0),
-                        self.child_code_unchecked(children.1),
-                        self.child_code_unchecked(children.2),
-                        self.child_code_unchecked(children.3),
+                        self.child_code_bits_unchecked(children & CHILD_BITS_MASK),
+                        self.child_code_bits_unchecked((children >> 3) & CHILD_BITS_MASK),
+                        self.child_code_bits_unchecked((children >> 6) & CHILD_BITS_MASK),
+                        self.child_code_bits_unchecked((children >> 9) & CHILD_BITS_MASK),
                     )
                 })
             } else {
                 None
             }
+        }
+
+        /// For a given code, return the code of the neighbour at the same depth for the given direction.
+        /// Returns None if the code is at a boundary and the direction of the neighbour would go outside.
+        pub fn same_depth_neighbour(self, neighbour_direction: NeighbourDirection) -> Option<Self> {
+            // Get depth of the node
+            let depth = self.depth();
+            // Compute maximum index along an axis for the depth
+            let max_index = Self::max_index_for_depth(depth) - 1;
+            let raw_code_no_sentinel = helpers::unset_msb(self.bits);
+            // Decode the code into the 3 coordinates (i, j, k)
+            let coordinates = morton::decode_3d(raw_code_no_sentinel);
+            let (new_i, new_j, new_k) = match neighbour_direction {
+                NeighbourDirection::PositiveX => {
+                    if coordinates.0 == max_index {
+                        return None;
+                    } else {
+                        (coordinates.0 + 1, coordinates.1, coordinates.2)
+                    }
+                }
+                NeighbourDirection::NegativeX => {
+                    if coordinates.0 == 0 {
+                        return None;
+                    } else {
+                        (coordinates.0 - 1, coordinates.1, coordinates.2)
+                    }
+                }
+                NeighbourDirection::PositiveY => {
+                    if coordinates.1 == max_index {
+                        return None;
+                    } else {
+                        (coordinates.0, coordinates.1 + 1, coordinates.2)
+                    }
+                }
+                NeighbourDirection::NegativeY => {
+                    if coordinates.1 == 0 {
+                        return None;
+                    } else {
+                        (coordinates.0, coordinates.1 - 1, coordinates.2)
+                    }
+                }
+                NeighbourDirection::PositiveZ => {
+                    if coordinates.2 == max_index {
+                        return None;
+                    } else {
+                        (coordinates.0, coordinates.1, coordinates.2 + 1)
+                    }
+                }
+                NeighbourDirection::NegativeZ => {
+                    if coordinates.2 == 0 {
+                        return None;
+                    } else {
+                        (coordinates.0, coordinates.1, coordinates.2 - 1)
+                    }
+                }
+            };
+
+            let mc = match morton::encode_3d(new_i, new_j, new_k) {
+                morton::Encoded3DCode::AllBits(m) => m,
+                morton::Encoded3DCode::SomeBits(_) => {
+                    panic!("Discarded some bits during neighbour code composition")
+                }
+            };
+
+            Some(unsafe { Self::new_from_code_and_depth_unchecked(mc, depth) })
         }
     }
 }
