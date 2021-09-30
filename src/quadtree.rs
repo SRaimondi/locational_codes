@@ -117,19 +117,13 @@ impl LocationalCode {
         neighbour_direction: NeighbourDirection,
     ) -> Option<(Self, Self)> {
         if self.can_have_children() {
-            // Codes are encoded as couple of 2 bits for each direction
-            // North: shift = 0, TopRight | TopLeft
-            // East: shift = 4,  TopRight | BottomRight
-            // South: shift = 8,  BottomRight | BottomLeft
-            // West: shift = 12,  TopLeft | BottomLeft
-            const CHILDREN_MASK: u64 = 0b1000_0100_1101_1110;
-            let children_chunk = (CHILDREN_MASK >> 4 * neighbour_direction as u64) & 0b1111;
-            Some(unsafe {
-                (
-                    self.child_code_bits_unchecked(children_chunk & 0b11),
-                    self.child_code_bits_unchecked((children_chunk >> 2) & 0b11),
-                )
-            })
+            let children = match neighbour_direction {
+                NeighbourDirection::North => (Child::TopLeft, Child::TopRight),
+                NeighbourDirection::East => (Child::BottomRight, Child::TopRight),
+                NeighbourDirection::South => (Child::BottomLeft, Child::BottomRight),
+                NeighbourDirection::West => (Child::BottomLeft, Child::TopLeft)
+            };
+            Some((self.child_code(children.0).unwrap(), self.child_code(children.1).unwrap()))
         } else {
             None
         }
